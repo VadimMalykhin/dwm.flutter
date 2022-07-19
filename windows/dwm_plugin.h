@@ -10,9 +10,9 @@ namespace dwm {
 
 class DwmPlugin : public flutter::Plugin {
  public:
-  static void RegisterWithRegistrar(flutter::PluginRegistrarWindows *registrar);
+  static void RegisterWithRegistrar(flutter::PluginRegistrarWindows* registrar);
 
-  DwmPlugin();
+  explicit DwmPlugin(flutter::PluginRegistrarWindows* registrar);
 
   virtual ~DwmPlugin();
 
@@ -21,10 +21,24 @@ class DwmPlugin : public flutter::Plugin {
   DwmPlugin& operator=(const DwmPlugin&) = delete;
 
  private:
+  // The registrar for this plugin for accessing the window.
+  flutter::PluginRegistrarWindows* registrar_;
+
+  // Returns an ID of the WindowProc delegate registration that can be used to unregister the
+  // handler.
+  int window_proc_id_ = -1;
+
+  // The root window.
+  HWND root_window_;
+
+  void InvokeEvent(std::string eventName);
+
   // Called when a method is called on this plugin's channel from Dart.
-  void HandleMethodCall(
-      const flutter::MethodCall<flutter::EncodableValue> &method_call,
-      std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result);
+  void HandleMethodCall(const flutter::MethodCall<flutter::EncodableValue>& method_call,
+                        std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result);
+
+  // Called for top-level WindowProc delegation.
+  std::optional<LRESULT> HandleWindowProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
 };
 
 }  // namespace dwm

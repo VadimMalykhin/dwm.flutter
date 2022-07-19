@@ -4,9 +4,8 @@
 
 #include "dwm_plugin.h"
 
-void DwmPluginCApiRegisterWithRegistrar(
-    FlutterDesktopPluginRegistrarRef registrar) {
+void DwmPluginCApiRegisterWithRegistrar(FlutterDesktopPluginRegistrarRef registrar) {
   dwm::DwmPlugin::RegisterWithRegistrar(
-      flutter::PluginRegistrarManager::GetInstance()
-          ->GetRegistrar<flutter::PluginRegistrarWindows>(registrar));
+      flutter::PluginRegistrarManager::GetInstance()->GetRegistrar<flutter::PluginRegistrarWindows>(
+          registrar));
 }
