@@ -1,6 +1,6 @@
 name: dwm
 description: Desktop Window Manager Plugin.
-version: 0.0.1
+version: 0.0.0-dev.0
 repository: https://github.com/VadimMalykhin/dwm.flutter
 
 environment:

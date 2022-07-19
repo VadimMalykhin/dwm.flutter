@@ -1,3 +1,3 @@
-## 0.0.1
+## 0.0.0-dev.0
 
-* TODO: Describe initial release.
+* Reserve the package name.
