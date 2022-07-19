@@ -1,15 +1,22 @@
 # dwm
 
+[![pub package](https://img.shields.io/pub/v/dwm.svg)](https://pub.dev/packages/dwm)
+
 Desktop Window Manager Plugin.
 
 ## Getting Started
 
-This project is a starting point for a Flutter
-[plug-in package](https://flutter.dev/developing-packages/),
-a specialized package that includes platform-specific implementation code for
-Android and/or iOS.
+...
 
-For help getting started with Flutter development, view the
-[online documentation](https://flutter.dev/docs), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Supported platforms and features
 
+Features support by platform:
+
+| Feature | Linux | macOS | Windows |
+| :--- | :---: | :---: | :---: |
+| <strong>Content Protection</strong><br/><small>Makes the application window transparent when capturing the screen.</small> | ❌️ | ❌️ | ✔️ |
+| <strong>Title Bar Color</strong><br/><small>Changes the application title bar color. (Windows 11 only)</small> | ❌️ | ❌️ | ❌️ |
+
+## License
+
+GPLv3
