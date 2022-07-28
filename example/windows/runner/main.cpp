@@ -26,8 +26,16 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance,
   project.set_dart_entrypoint_arguments(std::move(command_line_arguments));
 
   FlutterWindow window(project);
-  Win32Window::Point origin(10, 10);
-  Win32Window::Size size(1280, 720);
+
+  int windowHeight = 800;
+  int windowWidth = 800;
+
+  int xPos = (GetSystemMetrics(SM_CXSCREEN) / 2) - (windowWidth / 2);
+  int yPos = (GetSystemMetrics(SM_CYSCREEN) / 2) - (windowHeight / 2);
+
+  Win32Window::Point origin(xPos, yPos);
+  Win32Window::Size size(windowWidth, windowHeight);
+
   if (!window.CreateAndShow(L"DWM Example", origin, size)) {
     return EXIT_FAILURE;
   }
