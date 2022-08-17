@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../widgets/custom_dropdown.dart';
+
 class ThemeModeFlutter extends StatefulWidget {
   final ValueNotifier<ThemeMode> themeMode;
 
@@ -25,17 +27,17 @@ class _ThemeModeFlutterState extends State<ThemeModeFlutter> {
         const SizedBox(height: 20),
         SizedBox(
           width: 160,
-          child: DropdownButtonFormField<ThemeMode>(
+          child: CustomDropdownButtonFormField<ThemeMode>(
             isExpanded: false,
-            borderRadius: BorderRadius.circular(2),
+            borderRadius: BorderRadius.circular(16),
             decoration: InputDecoration(
               isDense: true,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: BorderRadius.circular(16),
               ),
             ),
             items: ThemeMode.values.map((ThemeMode value) {
-              return DropdownMenuItem<ThemeMode>(
+              return CustomDropdownMenuItem<ThemeMode>(
                 value: value,
                 child: Text(value.name.substring(0, 1).toUpperCase() + value.name.substring(1)),
               );

@@ -238,10 +238,10 @@ class NavigationButton extends StatelessWidget {
         alignment: Alignment.centerLeft,
         backgroundColor: active ? MaterialStateProperty.all<Color>(Colors.yellow.withAlpha(20)) : null,
         fixedSize: MaterialStateProperty.all<Size>(const Size(170, 50)),
-        padding: MaterialStateProperty.all<EdgeInsetsGeometry>(EdgeInsets.only(left: 20)),
+        padding: MaterialStateProperty.all<EdgeInsetsGeometry>(const EdgeInsets.only(left: 20)),
         shape: MaterialStateProperty.all<OutlinedBorder>(
           RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
             side: BorderSide.none,
           ),
         ),
