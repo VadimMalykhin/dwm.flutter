@@ -4,6 +4,12 @@
 #include <flutter/method_channel.h>
 #include <flutter/plugin_registrar_windows.h>
 
+#include <stdio.h>
+#include <windows.h>
+#include <windowsx.h>
+#include <dwmapi.h>
+#include <math.h>
+
 #include <memory>
 
 namespace dwm {
@@ -31,14 +37,30 @@ class DwmPlugin : public flutter::Plugin {
   // The root window.
   HWND root_window_;
 
-  void InvokeEvent(std::string eventName);
+  // A window placement
+  WINDOWPLACEMENT window_placement_;
+
+  POINT min_wnd_size_ = {0, 0};
+  POINT max_wnd_size_ = {-1, -1};
+
+  bool is_wnd_maximized_ = false;
+  bool is_wnd_minimized_ = false;
+  bool is_wnd_resizable_ = true;
+
+  int theme_mode_;
+
+  // Sends a message to the Flutter engine on this channel.
+  void InvokeMethod(std::string eventName, flutter::EncodableValue eventValue);
 
   // Called when a method is called on this plugin's channel from Dart.
   void HandleMethodCall(const flutter::MethodCall<flutter::EncodableValue>& method_call,
                         std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result);
 
   // Called for top-level WindowProc delegation.
-  std::optional<LRESULT> HandleWindowProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
+  std::optional<LRESULT> HandleWindowProc(HWND hwnd,
+                                          UINT message,
+                                          WPARAM wparam,
+                                          LPARAM lparam) noexcept;
 };
 
 }  // namespace dwm

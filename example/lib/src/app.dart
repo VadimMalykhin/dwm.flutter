@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:developer';
+import 'dart:ui';
 
 import 'package:dwm/dwm.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+
+import 'screens/screens.dart';
+import 'state.dart' as state;
 
 /// Create an Application
 Future<void> createApp() async {
@@ -15,10 +17,22 @@ Future<void> createApp() async {
     Zone.current.handleUncaughtError(details.exception, details.stack as StackTrace);
   };
 
-  return runZonedGuarded(() async {
-    WidgetsFlutterBinding.ensureInitialized();
+  WidgetsFlutterBinding.ensureInitialized();
+
+  try {
+    // Initialize the DWM plugin.
     await Dwm.ensureInitialized();
 
+    // Set the theme mode.
+    await Dwm.setThemeMode(DwmThemeMode.system);
+
+    // Set the minimum window size.
+    await Dwm.setWindowMinSize(const Size(800, 600));
+  } catch (e) {
+    log(e.toString());
+  }
+
+  return runZonedGuarded(() async {
     runApp(const App());
   }, (error, stackTrace) {
     WidgetsFlutterBinding.ensureInitialized();
@@ -34,220 +48,205 @@ class App extends StatefulWidget {
   State<App> createState() => _AppState();
 }
 
-class _AppState extends State<App> with DwmListener {
-  bool _contentProtectionStatus = false;
-
-  ThemeMode _themeMode = ThemeMode.system;
-  String _platformVersion = 'Unknown';
-
-  final _dwm = Dwm();
+class _AppState extends State<App> {
+  final ScrollController scrollController = ScrollController(
+    initialScrollOffset: 0,
+    keepScrollOffset: true,
+  );
 
   @override
   void initState() {
     super.initState();
-
-    Dwm.addListener(this);
-
-    _dwm.setContentProtection(true);
-
-    initPlatformState();
   }
 
   @override
   void dispose() {
-    Dwm.removeListener(this);
+    scrollController.dispose();
+
     super.dispose();
-  }
-
-  // Platform messages are asynchronous, so we initialize in an async method.
-  Future<void> initPlatformState() async {
-    String platformVersion;
-    // Platform messages may fail, so we use a try/catch PlatformException.
-    // We also handle the message potentially returning null.
-    try {
-      platformVersion = await _dwm.getPlatformVersion() ?? 'Unknown platform version';
-    } on PlatformException {
-      platformVersion = 'Failed to get platform version.';
-    }
-
-    // If the widget was removed from the tree while the asynchronous platform
-    // message was in flight, we want to discard the reply rather than calling
-    // setState to update our non-existent appearance.
-    if (!mounted) return;
-
-    try {
-      final value = await _dwm.getContentProtection ?? false;
-      setState(() {
-        _contentProtectionStatus = value;
-      });
-    } on PlatformException {
-      if (kDebugMode) {
-        print('Failed to get content protection.');
-      }
-    }
-
-    setState(() {
-      _platformVersion = platformVersion;
-    });
-  }
-
-  @override
-  void onContentProtectionEnabled() {
-    if (kDebugMode) {
-      print('onContentProtectionEnabled');
-    }
-    setState(() {
-      _contentProtectionStatus = true;
-    });
-  }
-
-  @override
-  void onContentProtectionDisabled() {
-    if (kDebugMode) {
-      print('onContentProtectionDisabled');
-    }
-    setState(() {
-      _contentProtectionStatus = false;
-    });
-  }
-
-  void _onChanged(bool value) async {
-    try {
-      await _dwm.setContentProtection(value);
-    } catch (e) {
-      if (kDebugMode) {
-        print(e);
-      }
-    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      themeMode: _themeMode,
-      theme: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.light,
-        colorScheme: const ColorScheme.light(
-          primary: Colors.blue,
-        ),
-      ),
-      darkTheme: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.dark,
-        colorScheme: const ColorScheme.dark(
-          primary: Colors.blue,
-        ),
-        scaffoldBackgroundColor: const Color(0xff272727),
-      ),
-      home: Scaffold(
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              const Text(
-                'Theme Mode',
-                style: TextStyle(fontSize: 26),
+    return ValueListenableBuilder(
+      valueListenable: state.themeMode,
+      builder: (BuildContext ctx, ThemeMode value, Widget? _) {
+        return MaterialApp(
+          debugShowCheckedModeBanner: false,
+          themeMode: value,
+          theme: ThemeData(
+            useMaterial3: true,
+            brightness: Brightness.light,
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xfff0b90b),
+            ),
+          ),
+          darkTheme: ThemeData(
+            useMaterial3: true,
+            brightness: Brightness.dark,
+            colorScheme: const ColorScheme.dark(
+              primary: Color(0xfff0b90b),
+            ),
+            scaffoldBackgroundColor: const Color(0xff272727),
+            dividerColor: const Color(0xff202020),
+            navigationRailTheme: const NavigationRailThemeData(
+              backgroundColor: Colors.black12,
+              indicatorColor: Color(0xfff0b90b),
+              unselectedIconTheme: IconThemeData(
+                color: Color(0xff5c6470),
               ),
-              const SizedBox(height: 20),
-              Row(
-                children: <Widget>[
-                  DropdownButton<ThemeMode>(
-                    isDense: true,
-                    items: ThemeMode.values.map((ThemeMode value) {
-                      return DropdownMenuItem<ThemeMode>(
-                        value: value,
-                        child: Text(value.name.substring(0, 1).toUpperCase() + value.name.substring(1)),
-                      );
-                    }).toList(),
-                    value: _themeMode,
-                    hint: const Text('Theme'),
-                    onChanged: (ThemeMode? value) {
-                      setState(() {
-                        _themeMode = value!;
-                      });
-                    },
-                  ),
-                  const SizedBox(width: 20),
-                  TextButton(
-                    onPressed: () async {
-                      setState(() {
-                        _themeMode = ThemeMode.light;
-                      });
-                    },
-                    child: const Text('Light'),
-                  ),
-                  const SizedBox(width: 20),
-                  TextButton(
-                    onPressed: () async {
-                      setState(() {
-                        _themeMode = ThemeMode.dark;
-                      });
-                    },
-                    child: const Text('Dark'),
-                  ),
-                  const SizedBox(width: 20),
-                  TextButton(
-                    onPressed: () async {
-                      setState(() {
-                        _themeMode = ThemeMode.system;
-                      });
-                    },
-                    child: const Text('System'),
-                  ),
-                ],
+              selectedIconTheme: IconThemeData(
+                color: Color(0xff1b1f29),
               ),
-              const SizedBox(height: 40),
-              Row(
-                children: <Widget>[
-                  const Text(
-                    'Content Protection',
-                    style: TextStyle(fontSize: 26),
-                  ),
-                  const SizedBox(width: 20),
-                  Icon(_contentProtectionStatus ? Icons.visibility_off : Icons.visibility),
-                  const SizedBox(width: 10),
-                  FutureBuilder(
-                    future: _dwm.getContentProtection,
-                    initialData: _contentProtectionStatus,
-                    builder: (BuildContext context, AsyncSnapshot snapshot) {
-                      return Text(snapshot.data ? 'on' : 'off');
-                    },
-                  ),
-                ],
+              unselectedLabelTextStyle: TextStyle(
+                color: Color(0xff5c6470),
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
               ),
-              const SizedBox(height: 20),
-              Row(
-                children: <Widget>[
-                  Switch(
-                    value: _contentProtectionStatus,
-                    onChanged: _onChanged,
-                  ),
-                  const SizedBox(width: 20),
-                  TextButton(
-                    onPressed: () async {
-                      await _dwm.setContentProtection(true);
-                    },
-                    child: const Text('Enable'),
-                  ),
-                  const SizedBox(width: 20),
-                  TextButton(
-                    onPressed: () async {
-                      await _dwm.setContentProtection(false);
-                    },
-                    child: const Text('Disable'),
-                  ),
-                ],
+              selectedLabelTextStyle: TextStyle(
+                color: Color(0xfff0b90b),
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
               ),
-              const SizedBox(height: 120),
-              Text('Theme Mode: $_themeMode'),
-              Text('Running on: $_platformVersion'),
-            ],
+            ),
+          ),
+          home: Scaffold(
+            body: ValueListenableBuilder(
+              valueListenable: state.navigationRailIndex,
+              builder: (BuildContext ctx, int value, Widget? _) {
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: <Widget>[
+                    ScrollConfiguration(
+                      behavior: ScrollConfiguration.of(context).copyWith(
+                        dragDevices: {
+                          PointerDeviceKind.mouse,
+                          PointerDeviceKind.touch,
+                        },
+                        scrollbars: false,
+                      ),
+                      child: Scrollbar(
+                        controller: scrollController,
+                        interactive: true,
+                        thumbVisibility: true,
+                        thickness: 6,
+                        radius: const Radius.circular(6),
+                        child: SingleChildScrollView(
+                          controller: scrollController,
+                          padding: const EdgeInsets.all(20),
+                          child: IntrinsicHeight(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.max,
+                              children: <Widget>[
+                                NavigationButton(
+                                  active: value == 0,
+                                  onPressed: () {
+                                    state.navigationRailIndex.value = 0;
+                                  },
+                                  child: const Text('Platform Version'),
+                                ),
+                                const SizedBox(height: 5),
+                                NavigationButton(
+                                  active: value == 1,
+                                  onPressed: () {
+                                    state.navigationRailIndex.value = 1;
+                                  },
+                                  child: const Text('Window States'),
+                                ),
+                                const SizedBox(height: 5),
+                                NavigationButton(
+                                  active: value == 2,
+                                  onPressed: () {
+                                    state.navigationRailIndex.value = 2;
+                                  },
+                                  child: const Text('Window Size'),
+                                ),
+                                const SizedBox(height: 5),
+                                NavigationButton(
+                                  active: value == 3,
+                                  onPressed: () {
+                                    state.navigationRailIndex.value = 3;
+                                  },
+                                  child: const Text('Theme Mode'),
+                                ),
+                                const SizedBox(height: 5),
+                                NavigationButton(
+                                  active: value == 4,
+                                  onPressed: () {
+                                    state.navigationRailIndex.value = 4;
+                                  },
+                                  child: const Text('Content Protection'),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const VerticalDivider(width: 1),
+                    Expanded(
+                      child: Builder(
+                        builder: (context) {
+                          switch (value) {
+                            case 0:
+                              return const PlatformVersionScreen();
+                            case 1:
+                              return const WindowStatesScreen();
+                            case 2:
+                              return const WindowSizeScreen();
+                            case 3:
+                              return ThemeModeScreen();
+                            case 4:
+                              return const ContentProtectionScreen();
+                            default:
+                              return Container();
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class NavigationButton extends StatelessWidget {
+  final bool active;
+  final VoidCallback onPressed;
+  final Widget child;
+
+  const NavigationButton({
+    super.key,
+    required this.onPressed,
+    required this.active,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return TextButton(
+      onPressed: onPressed,
+      style: ButtonStyle(
+        alignment: Alignment.centerLeft,
+        backgroundColor: active ? MaterialStateProperty.all<Color>(Colors.yellow.withAlpha(20)) : null,
+        fixedSize: MaterialStateProperty.all<Size>(const Size(170, 50)),
+        padding: MaterialStateProperty.all<EdgeInsetsGeometry>(EdgeInsets.only(left: 20)),
+        shape: MaterialStateProperty.all<OutlinedBorder>(
+          RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide.none,
           ),
         ),
       ),
+      child: child,
     );
   }
 }

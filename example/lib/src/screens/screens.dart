@@ -1,6 +1,5 @@
-export 'content_protection.dart';
-export 'platform_version.dart';
-export 'theme_mode_flutter.dart';
-export 'theme_mode_plugin.dart';
-export 'window_size.dart';
-export 'window_states.dart';
+export 'content_protection_screen.dart';
+export 'platform_version_screen.dart';
+export 'theme_mode_screen.dart';
+export 'window_size_screen.dart';
+export 'window_states_screen.dart';
