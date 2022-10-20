@@ -4,11 +4,11 @@
 #include <flutter/method_channel.h>
 #include <flutter/plugin_registrar_windows.h>
 
+#include <dwmapi.h>
+#include <math.h>
 #include <stdio.h>
 #include <windows.h>
 #include <windowsx.h>
-#include <dwmapi.h>
-#include <math.h>
 
 #include <memory>
 
@@ -37,7 +37,7 @@ class DwmPlugin : public flutter::Plugin {
   // The root window.
   HWND root_window_;
 
-  // A window placement
+  // A window placement.
   WINDOWPLACEMENT window_placement_;
 
   POINT min_wnd_size_ = {0, 0};
@@ -47,6 +47,23 @@ class DwmPlugin : public flutter::Plugin {
   bool is_wnd_minimized_ = false;
   bool is_wnd_resizable_ = true;
 
+  // Light Color Scheme.
+  COLORREF color_scheme_light_border_color_;
+  COLORREF color_scheme_light_border_inactive_color_;
+  COLORREF color_scheme_light_caption_color_;
+  COLORREF color_scheme_light_caption_inactive_color_;
+  COLORREF color_scheme_light_text_color_;
+  COLORREF color_scheme_light_text_inactive_color_;
+
+  // Dark Color Scheme.
+  COLORREF color_scheme_dark_border_color_;
+  COLORREF color_scheme_dark_border_inactive_color_;
+  COLORREF color_scheme_dark_caption_color_;
+  COLORREF color_scheme_dark_caption_inactive_color_;
+  COLORREF color_scheme_dark_text_color_;
+  COLORREF color_scheme_dark_text_inactive_color_;
+
+  // Theme Mode.
   int theme_mode_;
 
   // Sends a message to the Flutter engine on this channel.
@@ -61,6 +78,8 @@ class DwmPlugin : public flutter::Plugin {
                                           UINT message,
                                           WPARAM wparam,
                                           LPARAM lparam) noexcept;
+
+  void SetColorSchemeDark(DWORD type, COLORREF& color);
 };
 
 }  // namespace dwm

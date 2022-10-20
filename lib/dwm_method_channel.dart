@@ -53,6 +53,10 @@ class MethodChannelDwm extends DwmPlatform {
   static const getThemeModeMethod = 'getThemeMode';
   static const setThemeModeMethod = 'setThemeMode';
 
+  static const setWindowCornerPreferenceMethod = 'setWindowCornerPreference';
+
+  static const setDarkCaptionColorMethod = 'setDarkCaptionColor';
+
   static const getContentProtectionMethod = 'getContentProtection';
   static const setContentProtectionMethod = 'setContentProtection';
 
@@ -214,7 +218,7 @@ class MethodChannelDwm extends DwmPlatform {
     });
   }
 
-  ///
+  /// [setWindowClosable]
   @override
   Future<void> setWindowClosable(bool closable) async {
     await methodChannel.invokeMethod(setWindowClosableMethod, <String, dynamic>{
@@ -228,12 +232,20 @@ class MethodChannelDwm extends DwmPlatform {
     return const DwmColorScheme.dark();
   }
 
+  /// [setColorScheme]
   @override
   Future<void> setColorScheme(DwmColorScheme colorScheme) async {
-    await methodChannel.invokeMethod(setColorSchemeMethod, <String, dynamic>{
-      'brightness': colorScheme.brightness,
-      'titleBar': colorScheme.titleBar,
-    });
+    final args = <String, dynamic>{
+      'brightness': colorScheme.brightness.index,
+      'border': colorScheme.border.value,
+      'borderInactive': colorScheme.borderInactive.value,
+      'caption': colorScheme.caption.value,
+      'captionInactive': colorScheme.captionInactive.value,
+      'text': colorScheme.text.value,
+      'textInactive': colorScheme.textInactive.value,
+    };
+    print(args);
+    await methodChannel.invokeMethod(setColorSchemeMethod, args);
   }
 
   /// [getThemeMode] Get the window theme mode.
@@ -249,6 +261,14 @@ class MethodChannelDwm extends DwmPlatform {
   Future<void> setThemeMode(DwmThemeMode themeMode) async {
     await methodChannel.invokeMethod(setThemeModeMethod, <String, dynamic>{
       'themeMode': themeMode.index,
+    });
+  }
+
+  /// [setWindowCornerPreference] Set the window corner preference.
+  @override
+  Future<void> setWindowCornerPreference(DwmWindowCornerPreference value) async {
+    await methodChannel.invokeMethod(setWindowCornerPreferenceMethod, <String, dynamic>{
+      'value': value.index,
     });
   }
 
@@ -280,34 +300,36 @@ class MethodChannelDwm extends DwmPlatform {
 
   /// Platform Method Call Handler
   Future<void> _methodCallHandler(MethodCall call) async {
-    print({'listeners': listeners});
-    print({'super.listeners': super.listeners});
+    if (kDebugMode) {
+      // print({'listeners': listeners});
+      // print({'super.listeners': super.listeners});
+    }
 
     if (call.method == 'onEvent') {
       final eventName = call.arguments['eventName'];
       final eventValue = call.arguments['eventValue'];
 
-      print({'eventName': eventName, 'eventValue': eventValue});
+      // print({'eventName': eventName, 'eventValue': eventValue});
 
       if (listeners.isNotEmpty) {
         for (final DwmListener? listener in listeners) {
           if (listeners.contains(listener)) {
             if (listener is DwmWindowSizeListener) {
               if (eventName.compareTo('onWindowSize') == 0) {
-                print('onWindowSize_');
+                // print('onWindowSize_');
                 listener.onWindowSize();
               }
             } else if (listener is DwmWindowStateListener) {
-              print('----> DwmWindowStateListener');
+              // print('----> DwmWindowStateListener');
             } else if (listener is DwmThemeModeListener) {
               if (eventName.compareTo('onThemeModeChanged') == 0) {
                 listener.onThemeModeChanged(eventValue);
               }
             } else if (listener is DwmContentProtectionListener) {
               if (eventName.compareTo('onContentProtectionChanged') == 0) {
-                print('---------------------');
-                print(eventName.compareTo('onContentProtectionChanged'));
-                print('---------------------');
+                // print('---------------------');
+                // print(eventName.compareTo('onContentProtectionChanged'));
+                // print('---------------------');
                 final DwmDisplayAffinity displayAffinity = eventValue;
                 listener.onContentProtectionChanged(DwmDisplayAffinity.none);
               }

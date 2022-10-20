@@ -142,6 +142,10 @@ abstract class DwmPlatform extends PlatformInterface {
     throw UnimplementedError('setThemeMode() has not been implemented.');
   }
 
+  Future<void> setWindowCornerPreference(DwmWindowCornerPreference value) async {
+    throw UnimplementedError('setWindowCornerPreference() has not been implemented.');
+  }
+
   Future<DwmDisplayAffinity?> get getContentProtection async {
     throw UnimplementedError('getContentProtection has not been implemented.');
   }

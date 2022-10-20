@@ -32,6 +32,12 @@ abstract class DwmWindowStateListener implements DwmListener {
   void onWindowState(bool state) {}
 }
 
+/// [DwmColorSchemeListener]
+abstract class DwmColorSchemeListener implements DwmListener {
+  /// [onColorSchemeChanged]
+  void onColorSchemeChanged(DwmColorScheme colorScheme) {}
+}
+
 /// [DwmThemeModeListener]
 abstract class DwmThemeModeListener implements DwmListener {
   /// [onThemeModeChanged]

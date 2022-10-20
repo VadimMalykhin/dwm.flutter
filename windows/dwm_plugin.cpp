@@ -10,79 +10,111 @@
 #include <flutter/plugin_registrar_windows.h>
 #include <flutter/standard_method_codec.h>
 
-#include <WinUser.h>
-#include <dwmapi.h>
 #include <Uxtheme.h>
+#include <WinUser.h>
 #include <commctrl.h>
+#include <dwmapi.h>
 
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <sstream>
 
 namespace dwm {
 
-static constexpr auto kChannelName = "flutter/dwm";
+// todo use SetWindowCompositionAttribute
 
-static constexpr auto kEnsureInitialized = "ensureInitialized";
-
-static constexpr auto kGetPlatformVersion = "getPlatformVersion";
-
-static constexpr auto kSetWindowIconAndCationVisibility = "setWindowIconAndCationVisibility";
-static constexpr auto kSetWindowCation = "setWindowCation";
-
-static constexpr auto kGetWindowMinSize = "getWindowMinSize";
-static constexpr auto kSetWindowMinSize = "setWindowMinSize";
-static constexpr auto kResetWindowMinSize = "resetWindowMinSize";
-
-static constexpr auto kGetWindowMaxSize = "getWindowMaxSize";
-static constexpr auto kSetWindowMaxSize = "setWindowMaxSize";
-static constexpr auto kResetWindowMaxSize = "resetWindowMaxSize";
-
-static constexpr auto kSetWindowSize = "setWindowSize";
-
-static constexpr auto kIsWindowMinimized = "isWindowMinimized";
-static constexpr auto kSetWindowMinimized = "setWindowMinimized";
-
-static constexpr auto kIsWindowMaximized = "isWindowMaximized";
-static constexpr auto kSetWindowMaximized = "setWindowMaximized";
-
-static constexpr auto kSetWindowRestore = "setWindowRestore";
+constexpr auto kChannelName = "flutter/dwm";
+constexpr auto kEnsureInitialized = "ensureInitialized";
+constexpr auto kGetPlatformVersion = "getPlatformVersion";
+constexpr auto kSetWindowIconAndCationVisibility = "setWindowIconAndCationVisibility";
+constexpr auto kSetWindowCation = "setWindowCation";
+constexpr auto kGetWindowMinSize = "getWindowMinSize";
+constexpr auto kSetWindowMinSize = "setWindowMinSize";
+constexpr auto kResetWindowMinSize = "resetWindowMinSize";
+constexpr auto kGetWindowMaxSize = "getWindowMaxSize";
+constexpr auto kSetWindowMaxSize = "setWindowMaxSize";
+constexpr auto kResetWindowMaxSize = "resetWindowMaxSize";
+constexpr auto kSetWindowSize = "setWindowSize";
+constexpr auto kIsWindowMinimized = "isWindowMinimized";
+constexpr auto kSetWindowMinimized = "setWindowMinimized";
+constexpr auto kIsWindowMaximized = "isWindowMaximized";
+constexpr auto kSetWindowMaximized = "setWindowMaximized";
+constexpr auto kSetWindowRestore = "setWindowRestore";
 
 // Control Buttons
-static constexpr auto kIsWindowResizable = "isWindowResizable";
-static constexpr auto kSetWindowResizable = "setWindowResizable";
+constexpr auto kIsWindowResizable = "isWindowResizable";
+constexpr auto kSetWindowResizable = "setWindowResizable";
+constexpr auto kIsWindowMinimizable = "isWindowMinimizable";
+constexpr auto kSetWindowMinimizable = "setWindowMinimizable";
 
-static constexpr auto kIsWindowMinimizable = "isWindowMinimizable";
-static constexpr auto kSetWindowMinimizable = "setWindowMinimizable";
+// constexpr auto kIsWindowMaximizable = "isWindowMaximizable";
+// constexpr auto kSetWindowMaximizable = "setWindowMaximizable";
 
-// static constexpr auto kIsWindowMaximizable = "isWindowMaximizable";
-// static constexpr auto kSetWindowMaximizable = "setWindowMaximizable";
+constexpr auto kIsWindowClosable = "isWindowClosable";
+constexpr auto kSetWindowClosable = "setWindowClosable";
+constexpr auto kSetColorScheme = "setColorScheme";
 
-static constexpr auto kIsWindowClosable = "isWindowClosable";
-static constexpr auto kSetWindowClosable = "setWindowClosable";
+constexpr auto kGetThemeMode = "getThemeMode";
+constexpr auto kSetThemeMode = "setThemeMode";
 
-static constexpr auto kGetThemeMode = "getThemeMode";
-static constexpr auto kSetThemeMode = "setThemeMode";
+constexpr auto kSetWindowCornerPreference = "setWindowCornerPreference";
 
-static constexpr auto kGetContentProtection = "getContentProtection";
-static constexpr auto kSetContentProtection = "setContentProtection";
+constexpr auto kGetContentProtection = "getContentProtection";
+constexpr auto kSetContentProtection = "setContentProtection";
 
 // https://docs.microsoft.com/en-us/windows/win32/api/dwmapi/ne-dwmapi-dwmwindowattribute
 constexpr auto kDWMWA_USE_IMMERSIVE_DARK_MODE = static_cast<DWORD>(20);
+constexpr auto kDWMWA_WINDOW_CORNER_PREFERENCE = static_cast<DWORD>(33);
 constexpr auto kDWMWA_BORDER_COLOR = static_cast<DWORD>(34);
 constexpr auto kDWMWA_CAPTION_COLOR = static_cast<DWORD>(35);
 constexpr auto kDWMWA_TEXT_COLOR = static_cast<DWORD>(36);
+// constexpr auto kDWMWA_VISIBLE_FRAME_BORDER_THICKNESS = static_cast<DWORD>(37);
+// constexpr auto kDWMWA_SYSTEMBACKDROP_TYPE = static_cast<DWORD>(38);
 
+//! remove
 // Colors
 constexpr COLORREF kLIGHT_CAPTION_COLOR = RGB(243, 243, 243);
-constexpr COLORREF kLIGHT_TITLE_COLOR = RGB(0, 0, 0);
+constexpr COLORREF kLIGHT_TEXT_COLOR = RGB(0, 0, 0);
 constexpr COLORREF kLIGHT_BORDER_COLOR = RGB(19, 19, 19);
 constexpr COLORREF kLIGHT_CONTENT_BG = RGB(249, 249, 249);
 
 constexpr COLORREF kDARK_CAPTION_COLOR = RGB(32, 32, 32);
-constexpr COLORREF kDARK_TITLE_COLOR = RGB(249, 249, 249);
+constexpr COLORREF kDARK_TEXT_COLOR = RGB(249, 249, 249);
 constexpr COLORREF kDARK_BORDER_COLOR = RGB(19, 19, 19);
 constexpr COLORREF kDARK_CONTENT_BG = RGB(39, 39, 39);
+
+// enum DWM_SYSTEMBACKDROP_TYPE {
+//   // [Default] Let DWM automatically decide the system-drawn backdrop for this window.
+//   kAuto,
+//   // Do not draw any system backdrop.
+//   kNone,
+//   // Draw the backdrop material effect corresponding to a long-lived window.
+//   kMainWindow,
+//   // Draw the backdrop material effect corresponding to a transient window.
+//   kTransientWindow,
+//   // Draw the backdrop material effect corresponding to a window with a tabbed title bar.
+//   kTabbedWindow,
+// };
+
+// todo detect the current theme mode based on app preferences ignore OS.
+bool isDark(int theme_mode) {
+  switch (theme_mode) {
+    case 0: {  // system
+      break;
+    }
+    case 1: {  // light
+      break;
+    }
+    case 2: {  // dark
+      break;
+    }
+    default: {
+      break;
+    }
+  }
+  return false;
+};
 
 // Get the preferred theme mode
 bool isDarkTheme() {
@@ -103,26 +135,49 @@ HBRUSH GetPreferredThemeMode() {
   return reinterpret_cast<HBRUSH>(CreateSolidBrush(color));
 }
 
-void setTitleBarThemeMode(HWND hwnd, bool isDark) {
-  // if (isDark) {
-  //   return;
-  // }
-
-  COLORREF captionColor = kDARK_CAPTION_COLOR;
-  DwmSetWindowAttribute(hwnd, kDWMWA_CAPTION_COLOR, &captionColor, sizeof(captionColor));
-  COLORREF titleColor = RGB(255, 255, 255);
-  DwmSetWindowAttribute(hwnd, kDWMWA_TEXT_COLOR, &titleColor, sizeof(titleColor));
-  COLORREF borderColor = RGB(25, 25, 25);
-  DwmSetWindowAttribute(hwnd, kDWMWA_BORDER_COLOR, &borderColor, sizeof(borderColor));
-  enum class DWM_BOOL { kFalse, kTrue };
-  DWM_BOOL darkPreference = isDarkTheme() ? DWM_BOOL::kFalse : DWM_BOOL::kTrue;
-  DwmSetWindowAttribute(hwnd, kDWMWA_USE_IMMERSIVE_DARK_MODE, &darkPreference,
-                        sizeof(darkPreference));
+void UpdateBorderColor(HWND& hwnd, std::int64_t c1, COLORREF& c2) {
+  c2 = RGB(GetBValue(c1), GetGValue(c1), GetRValue(c1));
+  ::DwmSetWindowAttribute(hwnd, kDWMWA_BORDER_COLOR, &c2, sizeof(c2));
 }
+
+void UpdateCaptionColor(HWND& hwnd, std::int64_t c1, COLORREF& c2) {
+  c2 = RGB(GetBValue(c1), GetGValue(c1), GetRValue(c1));
+  ::DwmSetWindowAttribute(hwnd, kDWMWA_CAPTION_COLOR, &c2, sizeof(c2));
+}
+
+void UpdateTextColor(HWND& hwnd, std::int64_t c1, COLORREF& c2) {
+  c2 = RGB(GetBValue(c1), GetGValue(c1), GetRValue(c1));
+  ::DwmSetWindowAttribute(hwnd, kDWMWA_TEXT_COLOR, &c2, sizeof(c2));
+}
+
+// void setTitleBarThemeMode(HWND hwnd, bool isDark) {
+//   // if (isDark) {
+//   //   return;
+//   // }
+
+//   COLORREF captionColor = kDARK_CAPTION_COLOR;
+//   DwmSetWindowAttribute(hwnd, kDWMWA_CAPTION_COLOR, &captionColor, sizeof(captionColor));
+//   COLORREF titleColor = RGB(255, 255, 255);
+//   DwmSetWindowAttribute(hwnd, kDWMWA_TEXT_COLOR, &titleColor, sizeof(titleColor));
+//   COLORREF borderColor = RGB(25, 25, 25);
+//   DwmSetWindowAttribute(hwnd, kDWMWA_BORDER_COLOR, &borderColor, sizeof(borderColor));
+//   enum class DWM_BOOL { kFalse, kTrue };
+//   DWM_BOOL darkPreference = isDarkTheme() ? DWM_BOOL::kFalse : DWM_BOOL::kTrue;
+//   DwmSetWindowAttribute(hwnd, kDWMWA_USE_IMMERSIVE_DARK_MODE, &darkPreference,
+//                         sizeof(darkPreference));
+// }
 
 // void setTitleBarThemeMode(HWND hwnd, bool isDark) {
 
 // }
+
+// https://learn.microsoft.com/en-us/windows/apps/desktop/modernize/apply-rounded-corners
+enum DWM_WINDOW_CORNER_PREFERENCE : int {
+  kDefault = 0,     // Let the system decide whether or not to round window corners.
+  kDoNotRound = 1,  // Never round window corners.
+  kRound = 2,       // Round the corners if appropriate.
+  kRoundSmall = 3,  // 	Round the corners if appropriate, with a small radius.
+};
 
 // Method channel.
 std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>,
@@ -354,88 +409,6 @@ void DwmPlugin::HandleMethodCall(
     ::SetClassLong(root_window_, GCL_STYLE, style);
 
     result->Success();
-  } else if (method_call.method_name().compare(kGetThemeMode) == 0) {
-    // todo
-    result->Success(flutter::EncodableValue(true));
-  } else if (method_call.method_name().compare(kSetThemeMode) == 0) {
-    const flutter::EncodableMap& args = std::get<flutter::EncodableMap>(*method_call.arguments());
-
-    int theme_mode = std::get<int>(args.at(flutter::EncodableValue("themeMode")));
-
-    enum class DWM_BOOL { kFalse, kTrue };
-
-    switch (theme_mode) {
-      // system
-      case 0: {
-        // Windows 10+
-        if (::IsWindows10OrGreater()) {
-          bool is_dark_ = isDarkTheme();
-
-          COLORREF captionColor = is_dark_ ? kDARK_CAPTION_COLOR : kLIGHT_CAPTION_COLOR;
-          ::DwmSetWindowAttribute(root_window_, kDWMWA_CAPTION_COLOR, &captionColor,
-                                  sizeof(captionColor));
-
-          COLORREF titleColor = is_dark_ ? kDARK_TITLE_COLOR : kLIGHT_TITLE_COLOR;
-          ::DwmSetWindowAttribute(root_window_, kDWMWA_TEXT_COLOR, &titleColor, sizeof(titleColor));
-
-          COLORREF borderColor = is_dark_ ? kDARK_BORDER_COLOR : kLIGHT_BORDER_COLOR;
-
-          ::DwmSetWindowAttribute(root_window_, kDWMWA_BORDER_COLOR, &borderColor,
-                                  sizeof(borderColor));
-
-          DWM_BOOL darkPreference = is_dark_ ? DWM_BOOL::kFalse : DWM_BOOL::kTrue;
-          ::DwmSetWindowAttribute(root_window_, kDWMWA_USE_IMMERSIVE_DARK_MODE, &darkPreference,
-                                  sizeof(darkPreference));
-        }
-        break;
-      }
-      // light
-      case 1: {
-        // Windows 10+
-        if (IsWindows10OrGreater()) {
-          COLORREF captionColor = kLIGHT_CAPTION_COLOR;
-          ::DwmSetWindowAttribute(root_window_, kDWMWA_CAPTION_COLOR, &captionColor,
-                                  sizeof(captionColor));
-
-          COLORREF titleColor = kLIGHT_TITLE_COLOR;
-          ::DwmSetWindowAttribute(root_window_, kDWMWA_TEXT_COLOR, &titleColor, sizeof(titleColor));
-
-          COLORREF borderColor = kLIGHT_BORDER_COLOR;
-          ::DwmSetWindowAttribute(root_window_, kDWMWA_BORDER_COLOR, &borderColor,
-                                  sizeof(borderColor));
-
-          DWM_BOOL darkPreference = DWM_BOOL::kTrue;
-          ::DwmSetWindowAttribute(root_window_, kDWMWA_USE_IMMERSIVE_DARK_MODE, &darkPreference,
-                                  sizeof(darkPreference));
-        }
-        break;
-      }
-      // dark
-      case 2: {
-        // Windows 10+
-        if (IsWindows10OrGreater()) {
-          COLORREF captionColor = kDARK_CAPTION_COLOR;
-          ::DwmSetWindowAttribute(root_window_, kDWMWA_CAPTION_COLOR, &captionColor,
-                                  sizeof(captionColor));
-
-          COLORREF titleColor = kDARK_TITLE_COLOR;
-          ::DwmSetWindowAttribute(root_window_, kDWMWA_TEXT_COLOR, &titleColor, sizeof(titleColor));
-
-          COLORREF borderColor = kDARK_BORDER_COLOR;
-          ::DwmSetWindowAttribute(root_window_, kDWMWA_BORDER_COLOR, &borderColor,
-                                  sizeof(borderColor));
-
-          DWM_BOOL darkPreference = DWM_BOOL::kFalse;
-          ::DwmSetWindowAttribute(root_window_, kDWMWA_USE_IMMERSIVE_DARK_MODE, &darkPreference,
-                                  sizeof(darkPreference));
-
-          InvokeMethod("onThemeModeChanged", flutter::EncodableValue(true));
-        }
-        break;
-      }
-    }
-
-    result->Success(flutter::EncodableValue(true));
   } else if (method_call.method_name().compare("minimize") == 0) {
     ::GetWindowPlacement(root_window_, &window_placement_);
     if (window_placement_.showCmd != SW_SHOWMINIMIZED) {
@@ -467,6 +440,194 @@ void DwmPlugin::HandleMethodCall(
     if (window_placement_.showCmd != SW_MAXIMIZE) {
       ::PostMessage(root_window_, WM_SYSCOMMAND, SC_MAXIMIZE, 0);
     }
+    result->Success(flutter::EncodableValue(true));
+  } else if (method_call.method_name().compare(kSetColorScheme) == 0) {
+    // Bits 24-31 are the alpha value.
+    // Bits 16-23 are the red value.
+    // Bits 8-15 are the green value.
+    // Bits 0-7 are the blue value.
+
+    const flutter::EncodableMap& args = std::get<flutter::EncodableMap>(*method_call.arguments());
+
+    int brightness = std::get<int>(args.at(flutter::EncodableValue("brightness")));
+    std::int64_t border =
+        std::get<std::int64_t>(args.at(flutter::EncodableValue("border"))) & 0xffffffff;
+    std::int64_t border_inactive =
+        std::get<std::int64_t>(args.at(flutter::EncodableValue("borderInactive"))) & 0xffffffff;
+    std::int64_t caption =
+        std::get<std::int64_t>(args.at(flutter::EncodableValue("caption"))) & 0xffffffff;
+    std::int64_t caption_inactive =
+        std::get<std::int64_t>(args.at(flutter::EncodableValue("captionInactive"))) & 0xffffffff;
+    std::int64_t text =
+        std::get<std::int64_t>(args.at(flutter::EncodableValue("text"))) & 0xffffffff;
+    std::int64_t text_inactive =
+        std::get<std::int64_t>(args.at(flutter::EncodableValue("textInactive"))) & 0xffffffff;
+
+    if (isDark(theme_mode_)) {
+    }
+
+    switch (brightness) {
+      case 0: {
+        color_scheme_dark_border_inactive_color_ =
+            RGB(GetBValue(border_inactive), GetGValue(border_inactive), GetRValue(border_inactive));
+        color_scheme_dark_caption_color_ =
+            RGB(GetBValue(caption), GetGValue(caption), GetRValue(caption));
+        color_scheme_dark_caption_inactive_color_ = RGB(
+            GetBValue(caption_inactive), GetGValue(caption_inactive), GetRValue(caption_inactive));
+        color_scheme_dark_text_inactive_color_ =
+            RGB(GetBValue(text_inactive), GetGValue(text_inactive), GetRValue(text_inactive));
+
+        UpdateBorderColor(root_window_, border, color_scheme_dark_border_color_);
+        UpdateCaptionColor(root_window_, caption, color_scheme_dark_caption_color_);
+        UpdateTextColor(root_window_, text, color_scheme_dark_text_color_);
+
+        InvokeMethod("onColorSchemeChanged", flutter::EncodableValue(true));
+        break;
+      }
+      case 1: {
+        color_scheme_light_border_inactive_color_ =
+            RGB(GetBValue(border_inactive), GetGValue(border_inactive), GetRValue(border_inactive));
+        color_scheme_dark_caption_color_ =
+            RGB(GetBValue(caption), GetGValue(caption), GetRValue(caption));
+        color_scheme_light_caption_inactive_color_ = RGB(
+            GetBValue(caption_inactive), GetGValue(caption_inactive), GetRValue(caption_inactive));
+        color_scheme_light_text_inactive_color_ =
+            RGB(GetBValue(text_inactive), GetGValue(text_inactive), GetRValue(text_inactive));
+
+        UpdateBorderColor(root_window_, border, color_scheme_light_border_color_);
+        UpdateCaptionColor(root_window_, caption, color_scheme_light_caption_color_);
+        UpdateTextColor(root_window_, text, color_scheme_light_text_color_);
+
+        InvokeMethod("onColorSchemeChanged", flutter::EncodableValue(true));
+        break;
+      }
+    }
+
+    // caption.LongValue();
+
+    // COLORREF captionColor = RGB(22, 27, 34);
+    // ::DwmSetWindowAttribute(root_window_, kDWMWA_CAPTION_COLOR, &captionColor,
+    //                         sizeof(captionColor));
+
+    result->Success(flutter::EncodableValue(true));
+  } else if (method_call.method_name().compare(kGetThemeMode) == 0) {
+    // todo
+    result->Success(flutter::EncodableValue(true));
+  } else if (method_call.method_name().compare(kSetThemeMode) == 0) {
+    const flutter::EncodableMap& args = std::get<flutter::EncodableMap>(*method_call.arguments());
+
+    theme_mode_ = std::get<int>(args.at(flutter::EncodableValue("themeMode")));
+
+    enum class DWM_BOOL { kFalse, kTrue };
+
+    switch (theme_mode_) {
+      // system
+      case 0: {
+        // Windows 10+
+        if (::IsWindows10OrGreater()) {
+          bool is_dark_ = isDarkTheme();
+
+          COLORREF borderColor =
+              is_dark_ ? color_scheme_dark_border_color_ : color_scheme_light_border_color_;
+          ::DwmSetWindowAttribute(root_window_, kDWMWA_BORDER_COLOR, &borderColor,
+                                  sizeof(borderColor));
+
+          COLORREF captionColor =
+              is_dark_ ? color_scheme_dark_caption_color_ : color_scheme_light_caption_color_;
+          ::DwmSetWindowAttribute(root_window_, kDWMWA_CAPTION_COLOR, &captionColor,
+                                  sizeof(captionColor));
+
+          COLORREF titleColor = is_dark_ ? color_scheme_dark_text_inactive_color_
+                                         : color_scheme_light_text_inactive_color_;
+          ::DwmSetWindowAttribute(root_window_, kDWMWA_TEXT_COLOR, &titleColor, sizeof(titleColor));
+
+          DWM_BOOL darkPreference = is_dark_ ? DWM_BOOL::kFalse : DWM_BOOL::kTrue;
+          ::DwmSetWindowAttribute(root_window_, kDWMWA_USE_IMMERSIVE_DARK_MODE, &darkPreference,
+                                  sizeof(darkPreference));
+
+          InvokeMethod("onThemeModeChanged", flutter::EncodableValue(true));
+        }
+        break;
+      }
+      // light
+      case 1: {
+        // Windows 10+
+        if (IsWindows10OrGreater()) {
+          COLORREF borderColor = color_scheme_light_border_color_;
+          ::DwmSetWindowAttribute(root_window_, kDWMWA_BORDER_COLOR, &borderColor,
+                                  sizeof(borderColor));
+
+          COLORREF captionColor = color_scheme_light_caption_color_;
+          ::DwmSetWindowAttribute(root_window_, kDWMWA_CAPTION_COLOR, &captionColor,
+                                  sizeof(captionColor));
+
+          COLORREF titleColor = color_scheme_light_text_color_;
+          ::DwmSetWindowAttribute(root_window_, kDWMWA_TEXT_COLOR, &titleColor, sizeof(titleColor));
+
+          DWM_BOOL darkPreference = DWM_BOOL::kTrue;
+          ::DwmSetWindowAttribute(root_window_, kDWMWA_USE_IMMERSIVE_DARK_MODE, &darkPreference,
+                                  sizeof(darkPreference));
+
+          InvokeMethod("onThemeModeChanged", flutter::EncodableValue(true));
+        }
+        break;
+      }
+      // dark
+      case 2: {
+        // Windows 10+
+        if (IsWindows10OrGreater()) {
+          COLORREF borderColor = color_scheme_dark_border_color_;
+          ::DwmSetWindowAttribute(root_window_, kDWMWA_BORDER_COLOR, &borderColor,
+                                  sizeof(borderColor));
+
+          COLORREF captionColor = color_scheme_dark_caption_color_;
+          ::DwmSetWindowAttribute(root_window_, kDWMWA_CAPTION_COLOR, &captionColor,
+                                  sizeof(captionColor));
+
+          COLORREF titleColor = color_scheme_dark_text_color_;
+          ::DwmSetWindowAttribute(root_window_, kDWMWA_TEXT_COLOR, &titleColor, sizeof(titleColor));
+
+          DWM_BOOL darkPreference = DWM_BOOL::kFalse;
+          ::DwmSetWindowAttribute(root_window_, kDWMWA_USE_IMMERSIVE_DARK_MODE, &darkPreference,
+                                  sizeof(darkPreference));
+
+          InvokeMethod("onThemeModeChanged", flutter::EncodableValue(true));
+        }
+        break;
+      }
+    }
+    result->Success(flutter::EncodableValue(true));
+  } else if (method_call.method_name().compare(kSetWindowCornerPreference) == 0) {
+    const flutter::EncodableMap& args = std::get<flutter::EncodableMap>(*method_call.arguments());
+    int value = std::get<int>(args.at(flutter::EncodableValue("value")));
+
+    switch (value) {
+      case DWM_WINDOW_CORNER_PREFERENCE::kDefault: {
+        int cornerPreference = DWM_WINDOW_CORNER_PREFERENCE::kDefault;
+        ::DwmSetWindowAttribute(root_window_, kDWMWA_WINDOW_CORNER_PREFERENCE, &cornerPreference,
+                                sizeof(cornerPreference));
+        break;
+      }
+      case DWM_WINDOW_CORNER_PREFERENCE::kDoNotRound: {
+        int cornerPreference = DWM_WINDOW_CORNER_PREFERENCE::kDoNotRound;
+        ::DwmSetWindowAttribute(root_window_, kDWMWA_WINDOW_CORNER_PREFERENCE, &cornerPreference,
+                                sizeof(cornerPreference));
+        break;
+      }
+      case DWM_WINDOW_CORNER_PREFERENCE::kRound: {
+        int cornerPreference = DWM_WINDOW_CORNER_PREFERENCE::kRound;
+        ::DwmSetWindowAttribute(root_window_, kDWMWA_WINDOW_CORNER_PREFERENCE, &cornerPreference,
+                                sizeof(cornerPreference));
+        break;
+      }
+      case DWM_WINDOW_CORNER_PREFERENCE::kRoundSmall: {
+        int cornerPreference = DWM_WINDOW_CORNER_PREFERENCE::kRoundSmall;
+        ::DwmSetWindowAttribute(root_window_, kDWMWA_WINDOW_CORNER_PREFERENCE, &cornerPreference,
+                                sizeof(cornerPreference));
+        break;
+      }
+    }
+
     result->Success(flutter::EncodableValue(true));
   } else if (method_call.method_name().compare(kGetContentProtection) == 0) {
     // Retrieves the current display affinity setting, from any process, for a given window.
@@ -506,6 +667,7 @@ void DwmPlugin::HandleMethodCall(
     //     return;
     //   }
     // }
+
   } else if (method_call.method_name().compare(kSetContentProtection) == 0) {
     // Specifies where the content of the window can be displayed.
     // https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowdisplayaffinity
@@ -587,11 +749,64 @@ std::optional<LRESULT> DwmPlugin::HandleWindowProc(HWND hwnd,
     // Sent to a window when its nonclient area needs to be changed to indicate an active or
     // inactive state.
     // https://docs.microsoft.com/en-us/windows/win32/winmsg/wm-ncactivate
-    if (wparam == TRUE) {
-      InvokeMethod("onWindowState", flutter::EncodableValue(true));
-    } else {
-      InvokeMethod("onWindowState", flutter::EncodableValue(false));
+    bool is_dark_ = isDarkTheme();
+
+    switch (theme_mode_) {
+      // system
+      case 0: {
+        if (wparam == TRUE) {
+          SetColorSchemeDark(kDWMWA_BORDER_COLOR, is_dark_ ? color_scheme_dark_border_color_
+                                                           : color_scheme_light_border_color_);
+          SetColorSchemeDark(kDWMWA_CAPTION_COLOR, is_dark_ ? color_scheme_dark_caption_color_
+                                                            : color_scheme_light_caption_color_);
+          SetColorSchemeDark(kDWMWA_TEXT_COLOR, is_dark_ ? color_scheme_dark_text_color_
+                                                         : color_scheme_light_text_color_);
+          InvokeMethod("onWindowState", flutter::EncodableValue(true));
+        } else {
+          SetColorSchemeDark(kDWMWA_BORDER_COLOR, is_dark_
+                                                      ? color_scheme_dark_border_inactive_color_
+                                                      : color_scheme_light_border_inactive_color_);
+          SetColorSchemeDark(kDWMWA_CAPTION_COLOR,
+                             is_dark_ ? color_scheme_dark_caption_inactive_color_
+                                      : color_scheme_light_caption_inactive_color_);
+          SetColorSchemeDark(kDWMWA_TEXT_COLOR, is_dark_ ? color_scheme_dark_text_inactive_color_
+                                                         : color_scheme_light_text_inactive_color_);
+          InvokeMethod("onWindowState", flutter::EncodableValue(false));
+        }
+        break;
+      }
+      // light
+      case 1: {
+        if (wparam == TRUE) {
+          SetColorSchemeDark(kDWMWA_BORDER_COLOR, color_scheme_light_border_color_);
+          SetColorSchemeDark(kDWMWA_CAPTION_COLOR, color_scheme_light_caption_color_);
+          SetColorSchemeDark(kDWMWA_TEXT_COLOR, color_scheme_light_text_color_);
+          InvokeMethod("onWindowState", flutter::EncodableValue(true));
+        } else {
+          SetColorSchemeDark(kDWMWA_BORDER_COLOR, color_scheme_light_border_inactive_color_);
+          SetColorSchemeDark(kDWMWA_CAPTION_COLOR, color_scheme_light_caption_inactive_color_);
+          SetColorSchemeDark(kDWMWA_TEXT_COLOR, color_scheme_light_text_inactive_color_);
+          InvokeMethod("onWindowState", flutter::EncodableValue(false));
+        }
+        break;
+      }
+      // dark
+      case 2: {
+        if (wparam == TRUE) {
+          SetColorSchemeDark(kDWMWA_BORDER_COLOR, color_scheme_dark_border_color_);
+          SetColorSchemeDark(kDWMWA_CAPTION_COLOR, color_scheme_dark_caption_color_);
+          SetColorSchemeDark(kDWMWA_TEXT_COLOR, color_scheme_dark_text_color_);
+          InvokeMethod("onWindowState", flutter::EncodableValue(true));
+        } else {
+          SetColorSchemeDark(kDWMWA_BORDER_COLOR, color_scheme_dark_border_inactive_color_);
+          SetColorSchemeDark(kDWMWA_CAPTION_COLOR, color_scheme_dark_caption_inactive_color_);
+          SetColorSchemeDark(kDWMWA_TEXT_COLOR, color_scheme_dark_text_inactive_color_);
+          InvokeMethod("onWindowState", flutter::EncodableValue(false));
+        }
+        break;
+      }
     }
+
   } else if (message == WM_SETTINGCHANGE) {
     if (!lstrcmp(reinterpret_cast<LPCTSTR>(lparam), L"ImmersiveColorSet")) {
       InvokeMethod("onThemeChanged", flutter::EncodableValue(true));
@@ -654,6 +869,13 @@ std::optional<LRESULT> DwmPlugin::HandleWindowProc(HWND hwnd,
     PostQuitMessage(0);
   }
   return result;
+}
+
+void DwmPlugin::SetColorSchemeDark(DWORD type, COLORREF& color) {
+  // if (!color) {
+  //   return;
+  // }
+  ::DwmSetWindowAttribute(root_window_, type, &color, sizeof(color));
 }
 
 }  // namespace dwm

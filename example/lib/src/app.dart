@@ -178,6 +178,22 @@ class _AppState extends State<App> {
                                   onPressed: () {
                                     state.navigationRailIndex.value = 4;
                                   },
+                                  child: const Text('Colors'),
+                                ),
+                                const SizedBox(height: 5),
+                                NavigationButton(
+                                  active: value == 5,
+                                  onPressed: () {
+                                    state.navigationRailIndex.value = 5;
+                                  },
+                                  child: const Text('Window Corners'),
+                                ),
+                                const SizedBox(height: 6),
+                                NavigationButton(
+                                  active: value == 6,
+                                  onPressed: () {
+                                    state.navigationRailIndex.value = 6;
+                                  },
                                   child: const Text('Content Protection'),
                                 ),
                               ],
@@ -200,6 +216,10 @@ class _AppState extends State<App> {
                             case 3:
                               return ThemeModeScreen();
                             case 4:
+                              return ColorsScreen();
+                            case 5:
+                              return WindowCornersScreen();
+                            case 6:
                               return const ContentProtectionScreen();
                             default:
                               return Container();

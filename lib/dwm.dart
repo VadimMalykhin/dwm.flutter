@@ -16,21 +16,41 @@ class DwmColorScheme with Diagnosticable {
   /// The overall brightness of this color scheme.
   final Brightness brightness;
 
-  final Color titleBar;
+  final Color border;
+  final Color borderInactive;
+  final Color caption;
+  final Color captionInactive;
+  final Color text;
+  final Color textInactive;
 
   DwmColorScheme({
     required this.brightness,
-    required this.titleBar,
+    required this.border,
+    required this.borderInactive,
+    required this.caption,
+    required this.captionInactive,
+    required this.text,
+    required this.textInactive,
   });
 
   const DwmColorScheme.light({
     this.brightness = Brightness.light,
-    this.titleBar = const Color(0xffcccccc),
+    this.border = const Color(0xff191919),
+    this.borderInactive = const Color(0xff191919),
+    this.caption = const Color(0xffffffff),
+    this.captionInactive = const Color(0xffcccccc),
+    this.text = const Color(0xff000000),
+    this.textInactive = const Color(0xff000000),
   });
 
   const DwmColorScheme.dark({
     this.brightness = Brightness.dark,
-    this.titleBar = const Color(0xff272727),
+    this.border = const Color(0xff191919),
+    this.borderInactive = const Color(0xff191919),
+    this.caption = const Color(0xff272727),
+    this.captionInactive = const Color(0xff272727),
+    this.text = const Color(0xff272727),
+    this.textInactive = const Color(0xff272727),
   });
 
   /// https://api.flutter.dev/flutter/material/ColorScheme/debugFillProperties.html
@@ -39,8 +59,28 @@ class DwmColorScheme with Diagnosticable {
     super.debugFillProperties(properties);
     const defaultScheme = DwmColorScheme.light();
     properties.add(DiagnosticsProperty<Brightness>('brightness', brightness, defaultValue: defaultScheme.brightness));
-    properties.add(ColorProperty('titleBar', titleBar, defaultValue: defaultScheme.titleBar));
+    properties.add(ColorProperty('border', border, defaultValue: defaultScheme.border));
+    properties.add(ColorProperty('borderInactive', borderInactive, defaultValue: defaultScheme.borderInactive));
+    properties.add(ColorProperty('caption', caption, defaultValue: defaultScheme.caption));
+    properties.add(ColorProperty('captionInactive', captionInactive, defaultValue: defaultScheme.captionInactive));
+    properties.add(ColorProperty('text', text, defaultValue: defaultScheme.text));
+    properties.add(ColorProperty('textInactive', textInactive, defaultValue: defaultScheme.textInactive));
   }
+}
+
+/// Apply rounded corners in desktop apps for Windows 11.
+enum DwmWindowCornerPreference {
+  /// Let the system decide whether or not to round window corners.
+  kDefault,
+
+  /// Never round window corners.
+  kDoNotRound,
+
+  /// Round the corners if appropriate.
+  kRound,
+
+  /// 	Round the corners if appropriate, with a small radius.
+  kRoundSmall,
 }
 
 /// Describes which theme will be used by [MaterialApp].
@@ -216,15 +256,10 @@ class Dwm {
     return DwmPlatform.instance.setThemeMode(themeMode);
   }
 
-  /// [getContentProtection] Retrieves the current display affinity setting, from any process, for a given window.
-  // static Future<bool?> get getContentProtection async {
-  //   return DwmPlatform.instance.getContentProtection;
-  // }
-
-  // /// [setContentProtection] Specifies where the content of the window can be displayed.
-  // static Future<void> setContentProtection(bool value) async {
-  //   return DwmPlatform.instance.setContentProtection(value);
-  // }
+  /// [setWindowCornerPreference] Set the window corner preference.
+  static Future<void> setWindowCornerPreference(DwmWindowCornerPreference value) async {
+    return DwmPlatform.instance.setWindowCornerPreference(value);
+  }
 
   /// [getContentProtection] Retrieves the current display affinity setting, from any process, for a given window.
   static Future<DwmDisplayAffinity?> get getContentProtection async {

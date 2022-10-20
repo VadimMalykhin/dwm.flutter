@@ -3,8 +3,6 @@ import 'dart:ui';
 import 'package:dwm/dwm.dart';
 import 'package:flutter/material.dart';
 
-import '../widgets/custom_dropdown.dart';
-
 class ContentProtectionScreen extends StatefulWidget {
   const ContentProtectionScreen({super.key});
 
@@ -84,7 +82,7 @@ class _ContentProtectionScreenState extends State<ContentProtectionScreen> with 
                 const SizedBox(height: 20),
                 SizedBox(
                   width: 300,
-                  child: CustomDropdownButtonFormField<DwmDisplayAffinity>(
+                  child: DropdownButtonFormField<DwmDisplayAffinity>(
                     isExpanded: false,
                     borderRadius: BorderRadius.circular(16),
                     decoration: InputDecoration(
@@ -94,7 +92,7 @@ class _ContentProtectionScreenState extends State<ContentProtectionScreen> with 
                       ),
                     ),
                     items: DwmDisplayAffinity.values.map((DwmDisplayAffinity val) {
-                      return CustomDropdownMenuItem<DwmDisplayAffinity>(
+                      return DropdownMenuItem<DwmDisplayAffinity>(
                         value: val,
                         child: Text(val.name.substring(0, 1).toUpperCase() + val.name.substring(1)),
                       );
