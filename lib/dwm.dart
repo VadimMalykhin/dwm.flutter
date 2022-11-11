@@ -134,12 +134,12 @@ class Dwm {
 
   /// [addListener] Add the Event Listener.
   static void addListener(DwmListener listener) {
-    return DwmPlatform.addListener(listener);
+    return DwmPlatform.instance.addListener(listener);
   }
 
   /// [removeListener] Remove the Event Listener.
   static void removeListener(DwmListener listener) {
-    return DwmPlatform.removeListener(listener);
+    return DwmPlatform.instance.removeListener(listener);
   }
 
   /// Get the platform version.

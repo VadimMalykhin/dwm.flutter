@@ -4,10 +4,10 @@
             "name": "Win32",
             "includePath": [
                 "${workspaceFolder}/**",
-                "C:/sdk/flutter-engine/shell/platform/common/public/**",
-                "C:/sdk/flutter-engine/shell/platform/windows/public/**",
-                "C:/sdk/flutter-engine/shell/platform/common/client_wrapper/include/**",
-                "C:/sdk/flutter-engine/shell/platform/windows/client_wrapper/include/**"
+                "C:/FlutterEngine/shell/platform/common/public/**",
+                "C:/FlutterEngine/shell/platform/windows/public/**",
+                "C:/FlutterEngine/shell/platform/common/client_wrapper/include/**",
+                "C:/FlutterEngine/shell/platform/windows/client_wrapper/include/**"
             ],
             "defines": [
                 "_DEBUG",

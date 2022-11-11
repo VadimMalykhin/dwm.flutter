@@ -1,3 +1,5 @@
+import 'package:flutter/widgets.dart';
+
 import 'dwm.dart';
 
 abstract class DwmListener {}
@@ -48,4 +50,69 @@ abstract class DwmThemeModeListener implements DwmListener {
 abstract class DwmContentProtectionListener implements DwmListener {
   /// [onContentProtectionChanged]
   void onContentProtectionChanged(DwmDisplayAffinity displayAffinity) {}
+}
+
+/// [DwmListeners] Widget
+class DwmListeners extends StatefulWidget {
+  final Function(bool state)? onWindowState;
+  final VoidCallback? onWindowMinimized;
+  final VoidCallback? onWindowMaximized;
+  final Widget child;
+
+  const DwmListeners({
+    super.key,
+    this.onWindowState,
+    this.onWindowMinimized,
+    this.onWindowMaximized,
+    required this.child,
+  });
+
+  @override
+  State<DwmListeners> createState() => _DwmListenersState();
+}
+
+class _DwmListenersState extends State<DwmListeners>
+    with
+        DwmWindowSizeListener,
+        DwmWindowStateListener,
+        DwmColorSchemeListener,
+        DwmThemeModeListener,
+        DwmContentProtectionListener {
+  @override
+  void onWindowMinimized() {
+    if (widget.onWindowMinimized != null) {
+      widget.onWindowMinimized!();
+    }
+  }
+
+  @override
+  void onWindowMaximized() {
+    if (widget.onWindowMaximized != null) {
+      widget.onWindowMaximized!();
+    }
+  }
+
+  @override
+  void onWindowState(bool state) {
+    if (widget.onWindowState != null) {
+      widget.onWindowState!(state);
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    Dwm.addListener(this);
+  }
+
+  @override
+  void dispose() {
+    Dwm.removeListener(this);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return widget.child;
+  }
 }

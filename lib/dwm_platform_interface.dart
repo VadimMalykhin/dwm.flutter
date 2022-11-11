@@ -1,6 +1,5 @@
 import 'dart:ui';
 
-import 'package:flutter/foundation.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
 import 'dwm.dart';
@@ -27,23 +26,12 @@ abstract class DwmPlatform extends PlatformInterface {
     _instance = instance;
   }
 
-  /// Store event listenters.
-  final ObserverList<DwmListener> _listeners = ObserverList<DwmListener>();
-
-  /// Checks whether any assigned event listeners.
-  bool get hasListeners => _listeners.isNotEmpty;
-
-  /// Get a list of assigned event listeners.
-  List<DwmListener> get listeners => _listeners.toList(growable: false);
-
-  /// Add an event listener.
-  static void addListener(DwmListener listener) {
-    _instance._listeners.add(listener);
+  void addListener(DwmListener listener) {
+    throw UnimplementedError('addListener() has not been implemented.');
   }
 
-  /// Removes an event listener.
-  static void removeListener(DwmListener listener) {
-    _instance._listeners.remove(listener);
+  void removeListener(DwmListener listener) {
+    throw UnimplementedError('removeListener() has not been implemented.');
   }
 
   Future<bool> ensureInitialized() async {

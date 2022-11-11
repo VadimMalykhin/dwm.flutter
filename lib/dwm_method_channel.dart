@@ -74,6 +74,27 @@ class MethodChannelDwm extends DwmPlatform {
     return await methodChannel.invokeMethod(ensureInitializedMethod) ?? false;
   }
 
+  /// Store event listenters.
+  final ObserverList<DwmListener> _listeners = ObserverList<DwmListener>();
+
+  /// Checks whether any assigned event listeners.
+  bool get hasListeners => _listeners.isNotEmpty;
+
+  /// Get a list of assigned event listeners.
+  List<DwmListener> get listeners => _listeners.toList(growable: false);
+
+  /// Add an event listener.
+  @override
+  void addListener(DwmListener listener) {
+    _listeners.add(listener);
+  }
+
+  /// Removes an event listener.
+  @override
+  void removeListener(DwmListener listener) {
+    _listeners.remove(listener);
+  }
+
   /// [getPlatformVersion]
   @override
   Future<DwmPlatformVersion> get getPlatformVersion async {
@@ -244,7 +265,6 @@ class MethodChannelDwm extends DwmPlatform {
       'text': colorScheme.text.value,
       'textInactive': colorScheme.textInactive.value,
     };
-    print(args);
     await methodChannel.invokeMethod(setColorSchemeMethod, args);
   }
 
@@ -252,7 +272,6 @@ class MethodChannelDwm extends DwmPlatform {
   @override
   Future<DwmThemeMode> get getThemeMode async {
     final result = await methodChannel.invokeMethod(getThemeModeMethod);
-    print({'GetThemeMode': result});
     return DwmThemeMode.system;
   }
 
@@ -276,9 +295,6 @@ class MethodChannelDwm extends DwmPlatform {
   @override
   Future<DwmDisplayAffinity?> get getContentProtection async {
     final result = await methodChannel.invokeMethod(getContentProtectionMethod);
-
-    // print({'DwmDisplayAffinity': result});
-
     if (result == DwmDisplayAffinity.none.dword) {
       return DwmDisplayAffinity.none;
     } else if (result == DwmDisplayAffinity.monitor.dword) {
@@ -300,36 +316,33 @@ class MethodChannelDwm extends DwmPlatform {
 
   /// Platform Method Call Handler
   Future<void> _methodCallHandler(MethodCall call) async {
-    if (kDebugMode) {
-      // print({'listeners': listeners});
-      // print({'super.listeners': super.listeners});
-    }
-
-    if (call.method == 'onEvent') {
+    if (call.method.compareTo('onEvent') == 0) {
       final eventName = call.arguments['eventName'];
       final eventValue = call.arguments['eventValue'];
-
-      // print({'eventName': eventName, 'eventValue': eventValue});
 
       if (listeners.isNotEmpty) {
         for (final DwmListener? listener in listeners) {
           if (listeners.contains(listener)) {
             if (listener is DwmWindowSizeListener) {
               if (eventName.compareTo('onWindowSize') == 0) {
-                // print('onWindowSize_');
                 listener.onWindowSize();
+              } else if (eventName.compareTo('onWindowResized') == 0) {
+                listener.onWindowResized();
               }
-            } else if (listener is DwmWindowStateListener) {
-              // print('----> DwmWindowStateListener');
-            } else if (listener is DwmThemeModeListener) {
+            }
+
+            if (listener is DwmWindowStateListener) {
+              listener.onWindowState(eventValue);
+            }
+
+            if (listener is DwmThemeModeListener) {
               if (eventName.compareTo('onThemeModeChanged') == 0) {
                 listener.onThemeModeChanged(eventValue);
               }
-            } else if (listener is DwmContentProtectionListener) {
+            }
+
+            if (listener is DwmContentProtectionListener) {
               if (eventName.compareTo('onContentProtectionChanged') == 0) {
-                // print('---------------------');
-                // print(eventName.compareTo('onContentProtectionChanged'));
-                // print('---------------------');
                 final DwmDisplayAffinity displayAffinity = eventValue;
                 listener.onContentProtectionChanged(DwmDisplayAffinity.none);
               }
@@ -338,27 +351,5 @@ class MethodChannelDwm extends DwmPlatform {
         }
       }
     }
-
-    // if (listeners.isNotEmpty) {
-    //   print(listeners);
-    //   for (final DwmListener? listener in listeners) {
-    //     if (listeners.contains(listener)) {
-    //       if (listener is DwmWindowSizeListener) {
-    //         if (call.method.compareTo('onWindowSize') == 0) {
-    //           print('onWindowSize');
-    //           listener.onWindowSize();
-    //         }
-    //       } else if (listener is DwmThemeModeListener) {
-    //         // onThemeModeChanged
-    //       } else if (listener is DwmContentProtectionListener) {
-    //         if (call.method.compareTo('onContentProtectionDisabled') == 0) {
-    //           listener.onContentProtectionDisabled();
-    //         } else if (call.method.compareTo('onContentProtectionEnabled') == 0) {
-    //           listener.onContentProtectionEnabled();
-    //         }
-    //       }
-    //     }
-    //   }
-    // }
   }
 }
